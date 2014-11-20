@@ -1,0 +1,7 @@
+queue:
+- name: default
+  rate: 25/s
+  retry_parameters:
+    min_backoff_seconds: 30
+    max_backoff_seconds: 120
+    max_doublings: 0

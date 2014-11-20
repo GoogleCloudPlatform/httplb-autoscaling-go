@@ -1,0 +1,4 @@
+# VIM tmp files
+*.swp
+
+tags
