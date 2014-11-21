@@ -123,4 +123,4 @@ Keep a close eye on your project's VM instances screen. You should see many more
 
 ### Licensing
 
-* See[LICENSE](LICENSE)
+* See [LICENSE](LICENSE)
