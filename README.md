@@ -68,9 +68,9 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 
 #### AppEngine
 
-##### Update counter.go consts
+##### Update main.go consts
 
-1. Update processingPoolIp in counter.go with the IP address created for our global forwarding rule. You can look this up by running:
+1. Update processingPoolIp in main.go with the IP address created for our global forwarding rule. You can look this up by running:
 
 		gcloud compute forwarding-rules list
 2. Update saveToBucketName with `${OUTPUT_BUCKET}`
