@@ -12,6 +12,7 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 
 1. Install the gcloud command line tool: <https://developers.google.com/cloud/sdk/#Quick\_Start>
 2. Install the gcloud preview commands:
+
 		gcloud components update preview
 3. Create a project on Cloud Console <https://console.developers.google.com/project>
 4. Enable billing.
@@ -21,6 +22,7 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 8. Enable Google Compute Engine Autoscaler API
 9. Create an Oauth Service Account for your project.
 10. Set the project's id in your shell:
+
 		export CLOUDSDK_CORE_PROJECT=${PROJECT_ID}
 
 #### Create Input/Output Buckets
@@ -33,23 +35,31 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 
 ##### Create the Managed Instance Group
 1. Create the instance template for our backends:
+
 		gcloud compute instance-templates create imagemagick-go-template --description "A pool of machines running our imagemagick service." --image debian-7 --machine-type n1-standard-1 --metadata goprog="http://storage.googleapis.com/imagemagick/compute/web-process-image.go" startup-script-url="gs://imagemagick/compute/scripts/startup-test-go.sh" --boot-disk-size 200 --scopes storage-full --tags http-server
 2. Create the Managed Instance Group:
+
 		gcloud preview managed-instance-groups --zone us-central1-f create imagemagick-go --base-instance-name imagemagick-go --size 2 --template imagemagick-go-template
 
 ##### Create the HTTP Load Balancer
 1. Spin up a backend service:
   1. Create a healh check:
-			gcloud compute http-health-checks create imagemagick-check --request-path "/healthcheck"
+
+		  gcloud compute http-health-checks create imagemagick-check --request-path "/healthcheck"
   2. Create the backend service:
-			gcloud compute backend-services create imagemagick-backend-service --http-health-check imagemagick-check
+
+		  gcloud compute backend-services create imagemagick-backend-service --http-health-check imagemagick-check
   3. Add the managed instance group to the backend service:
-			gcloud compute backend-services add-backend imagemagick-backend-service --group imagemagick-go --zone us-central1-f --balancing-mode UTILIZATION --max-utilization 0.6
+
+		  gcloud compute backend-services add-backend imagemagick-backend-service --group imagemagick-go --zone us-central1-f --balancing-mode UTILIZATION --max-utilization 0.6
 2. Create a URL map to route requests to the appropriate backend services:
+
 		gcloud compute url-maps create imagemagick-map --default-service imagemagick-backend-service
 3. Create a target HTTP proxy:
+
 		gcloud compute target-http-proxies create imagemagick-proxy --url-map imagemagick-map
 4. Create a global forwarding rule:
+
 		gcloud compute forwarding-rules create imagemagick-rule --global --target-http-proxy imagemagick-proxy --port-range 80
 
 ##### Set up the Autoscaler
@@ -61,6 +71,7 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 ##### Update counter.go consts
 
 1. Update processingPoolIp in counter.go with the IP address created for our global forwarding rule. You can look this up by running:
+
 		gcloud compute forwarding-rules list
 2. Update saveToBucketName with `${OUTPUT_BUCKET}`
 
@@ -85,8 +96,10 @@ Be sure to verify the HTTPS version of your domain.
 ###### Create the notification
 
 1. Configure gsutil to use the Service Account:
+
 		gsutil config -e
 2. Watch the bucket:
+
 		gsutil notification watchbucket https://${PROJECT_ID}.appspot.com/ gs://${INPUT_BUCKET}
 
 ### Running
