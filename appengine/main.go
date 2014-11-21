@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package counter
+// Package main is responsible for orchestrating our App Engine app. It
+// provides functions for handling GCS and task queue notifications.
+package main
 
 import (
 	"encoding/json"
@@ -40,11 +42,6 @@ func init() {
 	http.HandleFunc("/worker", worker)
 }
 
-type Counter struct {
-	BucketName string
-	Count      int
-}
-
 type notification struct {
 	Id             string `json:"id"`
 	ObjectName     string `json:"name"`
@@ -52,6 +49,8 @@ type notification struct {
 	BucketName     string `json:"bucket"`
 }
 
+// handler processes a Cloud Storage Object Change Notification and pushes a
+// corresponding transformation task to the default task queue.
 func handler(w http.ResponseWriter, r *http.Request) {
 	//Get App Engine context
 	c := appengine.NewContext(r)
@@ -98,6 +97,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// worker consumes data from the task queue and asks our backend machines to
+// compute some transformation on the given image via an HTTP request.
 func worker(w http.ResponseWriter, r *http.Request) {
 	//Get App Engine context
 	c := appengine.NewContext(r)
@@ -114,10 +115,7 @@ func worker(w http.ResponseWriter, r *http.Request) {
 	values.Set("save-to", saveToBucketName)
 
 	//Create Post URL by combining HTTP protocol and processing pool IP address
-	var postUrlParts []string
-	postUrlParts = append(postUrlParts, "http://")
-	postUrlParts = append(postUrlParts, processingPoolIp)
-	postUrlParts = append(postUrlParts, "/process")
+	postUrlParts := []string{"http://", processingPoolIp, "/process"}
 	postUrl := strings.Join(postUrlParts, "")
 
 	c.Infof("Sending request to transform: %v", objectName)
@@ -137,7 +135,5 @@ func worker(w http.ResponseWriter, r *http.Request) {
 	}
 	// Forward the backend service's status code along to the taskqueue.
 	w.WriteHeader(resp.StatusCode)
-
 	//TODO: Add Confirmation Queue to handle if assigned VM is deleted via Autoscaler scale down
-
 }
