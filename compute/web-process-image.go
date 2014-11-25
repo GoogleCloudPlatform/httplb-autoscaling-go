@@ -56,7 +56,8 @@ type RetryTransport struct {
 	maxTries int
 }
 
-// RoundTrip implements the http.RoundTripper interface and will attempt to retry an HTTP request if the response contains a retryable status code.
+// RoundTrip implements the http.RoundTripper interface and will attempt to retry an HTTP request
+// if the response contains a retryable status code.
 func (t *RetryTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	var body []byte
 	if req.Body != nil {
@@ -68,7 +69,7 @@ func (t *RetryTransport) RoundTrip(req *http.Request) (resp *http.Response, err 
 	for i := 0; i < t.maxTries; i++ {
 		if i != 0 {
 			// Build a new request.
-			req = t.CopyRequest(req, body)
+			req = copyRequest(req, body)
 		}
 		resp, err = t.RoundTripper.RoundTrip(req)
 		if err == nil {
@@ -81,8 +82,8 @@ func (t *RetryTransport) RoundTrip(req *http.Request) (resp *http.Response, err 
 	return
 }
 
-// CopyRequest constructs a new HTTP request mirroring the provided one with the given body.
-func (t RetryTransport) CopyRequest(req *http.Request, body []byte) *http.Request {
+// copyRequest constructs a new HTTP request mirroring the provided one with the given body.
+func copyRequest(req *http.Request, body []byte) *http.Request {
 	nreq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewReader(body))
 	if err != nil {
 		log.Panicf("Unable to copy http request: %v", err)
@@ -112,9 +113,9 @@ func getProcessImageReq(r *http.Request) (processImageReq, error) {
 	saveToBucket := r.FormValue("save-to")
 
 	// Now get the filename extension.
-	var extension = filepath.Ext(filename)
-	var name = filename[:len(filename)-len(extension)]
-	var filenameElements = []string{name, ThumbnailSuffix, extension}
+	extension := filepath.Ext(filename)
+	name := filename[:len(filename)-len(extension)]
+	filenameElements := []string{name, ThumbnailSuffix, extension}
 	saveToFilename := strings.Join(filenameElements, "")
 	return processImageReq{
 		sourceBucket:   sourceBucket,
@@ -124,12 +125,14 @@ func getProcessImageReq(r *http.Request) (processImageReq, error) {
 	}, nil
 }
 
-// imagemagickHandler implements the http.Handler interface and provides for farming image manipulation requests out among a static number of goroutines.
+// imagemagickHandler implements the http.Handler interface and provides for farming image
+// manipulation requests out among a static number of goroutines.
 type imagemagickHandler struct {
 	c chan<- processImageReq
 }
 
-// ServeHTTP attempts to process an image manipulation request and returns a 200. If the request could not be queued, a 503 is returned; if the request was otherwise invalid, a 500.
+// ServeHTTP attempts to process an image manipulation request and returns a 200. If the request
+// could not be queued, a 503 is returned; if the request was otherwise invalid, a 500.
 func (h *imagemagickHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req, err := getProcessImageReq(r)
 	if err != nil {
@@ -144,7 +147,8 @@ func (h *imagemagickHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// NewImagemagickHandler builds returns a new imagemagickHandler with the specified queueSize and number of processing routines.
+// NewImagemagickHandler builds returns a new imagemagickHandler with the specified queueSize and
+// number of processing routines.
 func NewImagemagickHandler(queueSize, numRoutines int) (h *imagemagickHandler) {
 	c := make(chan processImageReq, queueSize)
 	h = &imagemagickHandler{c: c}
@@ -166,12 +170,15 @@ type imageProcessor struct {
 func (p *imageProcessor) process() {
 	for r := range p.c {
 		t := time.Now()
-		p.processImage(r)
+		if err := p.processImage(r); err != nil {
+			p.l.Printf("Could not process image %v: %v\n", r.saveToFilename, err)
+		}
 		p.l.Printf("Processing took %fs\n", time.Since(t).Seconds())
 	}
 }
 
-// getImageBytes attempts to download and return the bytes of the indicated GCS object. It may panic if a network request cannot be completed within 4 attempts.
+// getImageBytes attempts to download and return the bytes of the indicated GCS object. It may
+// panic if a network request cannot be completed within 4 attempts.
 func (p *imageProcessor) getImageBytes(sourceBucket, filename string) (b []byte) {
 	obj, err := p.s.Objects.Get(sourceBucket, filename).Do()
 	if err != nil {
@@ -189,49 +196,51 @@ func (p *imageProcessor) getImageBytes(sourceBucket, filename string) (b []byte)
 	return
 }
 
-// getThumbnailCommand returns a simple imagemagick command which resizes the indicated image into a 100x100 thumbnail.
-func getThumbnailCommand(in, out string) *exec.Cmd {
+// getThumbnailCommand returns a simple imagemagick command which resizes the indicated image into
+// a 100x100 thumbnail.
+func thumbnailCommand(in, out string) *exec.Cmd {
 	return exec.Command("convert", in, "-thumbnail", "100x100", out)
 }
 
-// getIntenseCommand returns an imagemagick command which applies many CPU intensive transformations to the indicated image before resizing it into a 100x100 thumbnail. It should take about 7.8s to process on an n1-standard-1 machine.
-func getIntenseCommand(in, out string) *exec.Cmd {
-	return exec.Command("convert", in, "-auto-level", "-auto-orient", "-antialias", "-auto-gamma", "-contrast", "-despeckle", "-thumbnail", "100x100", out)
+// getIntenseCommand returns an imagemagick command which applies many CPU intensive
+// transformations to the indicated image before resizing it into a 100x100 thumbnail. It should
+// take about 7.8s to process on an n1-standard-1 machine.
+func intenseCommand(in, out string) *exec.Cmd {
+	return exec.Command("convert", in, "-auto-level", "-auto-orient", "-antialias",
+		"-auto-gamma", "-contrast", "-despeckle", "-thumbnail", "100x100", out)
 }
 
-// getModerateCommand returns a an imagemagick command which applies several basic transformations to an image before resizing to a 100x100 thumbnail. It should take about 1s to process on an n1-standard-1 machine.
-func getModerateCommand(in, out string) *exec.Cmd {
-	return exec.Command("convert", in, "-auto-orient", "-antialias", "-contrast", "-thumbnail", "100x100", out)
+// getModerateCommand returns a an imagemagick command which applies several basic transformations
+// to an image before resizing to a 100x100 thumbnail. It should take about 1s to process on an
+// n1-standard-1 machine.
+func moderateCommand(in, out string) *exec.Cmd {
+	return exec.Command("convert", in, "-auto-orient", "-antialias", "-contrast", "-thumbnail",
+		"100x100", out)
 }
 
-// processImage applies a transformation to the indicated image and writes its output to a given GCS bucket.
-// processImage works in several steps:
+// processImage applies a transformation to the indicated image and writes its output to a given
+// GCS bucket. It works in several steps:
 // 1. Retrieve the image's data from GCS.
 // 2. Downloads the image.
 // 3. Uses Imagemagick to compute a transformation on the image.
 // 4. Uploads the resulting image to GCS.
-func (p *imageProcessor) processImage(r processImageReq) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			p.l.Println("Recovered in processImage", rec)
-			p.l.Printf("Was unable to process image: %v\n", r.saveToFilename)
-		}
-	}()
-
+func (p *imageProcessor) processImage(r processImageReq) (err error) {
 	// Copy the file to VM's attached Persistent Disk for image conversion
 	b := p.getImageBytes(r.sourceBucket, r.filename)
 	p.l.Printf("Read %d bytes from response body...\n", len(b))
 
-	if err := ioutil.WriteFile(r.filename, b, 0600); err != nil {
-		p.l.Panicf("Error writing file %v to disk: %v\n", r.filename, err)
+	if err = ioutil.WriteFile(r.filename, b, 0600); err != nil {
+		p.l.Printf("Error writing file %v to disk\n", r.filename)
+		return
 	}
 	defer os.Remove(r.filename) // Cleanup input file after we transform it.
 
-	cmd := getModerateCommand(r.filename, r.saveToFilename)
+	cmd := moderateCommand(r.filename, r.saveToFilename)
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		p.l.Panicf("Could not convert file. StdOut: %v, StdErr: %v\n", string(out), err)
+		p.l.Printf("Could not transform file. StdOut: %v\n", string(out))
+		return
 	} else {
 		p.l.Printf("Converted %s to %s\n", r.filename, r.saveToFilename)
 	}
@@ -242,17 +251,20 @@ func (p *imageProcessor) processImage(r processImageReq) {
 	object := &storage.Object{Name: r.saveToFilename}
 	file, err := os.Open(r.saveToFilename)
 	if err != nil {
-		p.l.Panicf("Error opening %q: %v\n", r.saveToFilename, err)
+		p.l.Printf("Error opening %q\n", r.saveToFilename)
+		return
 	}
 	defer file.Close()
 	res, err := p.s.Objects.Insert(r.saveToBucket, object).Media(file).Do()
 	if err != nil {
-		p.l.Panicf("Unable to upload %v to GCS: %v\n", r.saveToFilename, err)
+		p.l.Printf("Unable to upload %v to GCS\n", r.saveToFilename)
 	}
 	p.l.Printf("Created object %v at location %v\n", res.Name, res.SelfLink)
+	return
 }
 
-// NewImageProcessor constructs an imageProcessor which listens for input on the provided channel and logs to stderr with its name as the prefix.
+// NewImageProcessor constructs an imageProcessor which listens for input on the provided channel
+// and logs to stderr with its name as the prefix.
 func NewImageProcessor(c <-chan processImageReq, name string) *imageProcessor {
 	client, err := serviceaccount.NewClient(&serviceaccount.Options{
 		Transport: &RetryTransport{http.DefaultTransport, 5},

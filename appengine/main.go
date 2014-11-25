@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"appengine"
-	"appengine/taskqueue"
+	"appengine/delay"
 	"appengine/urlfetch"
 )
 
@@ -37,13 +37,16 @@ const (
 	processingPoolIp = "107.178.243.219"
 )
 
+var (
+	transformImageFunc = delay.Func("transform", transformImage)
+)
+
 func init() {
 	http.HandleFunc("/", handler)
-	http.HandleFunc("/worker", worker)
 }
 
 type notification struct {
-	Id             string `json:"id"`
+	ID             string `json:"id"`
 	ObjectName     string `json:"name"`
 	ObjectSelfLink string `json:"selfLink"`
 	BucketName     string `json:"bucket"`
@@ -76,64 +79,50 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		c.Errorf("Error unmarshalling JSON: %v", err)
 		return
 	}
-	c.Infof("%s: %s", n.Id, n.BucketName, n.ObjectName)
+	c.Infof("%s: %s", n.ID, n.BucketName, n.ObjectName)
 
-	//Set the Object Name to the selfLink encoded version of the Object Name. Be careful, because ObjectSelfLink could be encoded.
+	//Set the Object Name to the selfLink encoded version of the Object Name. Be careful,
+	// because ObjectSelfLink could be encoded.
 	n.ObjectName, err = url.QueryUnescape(filepath.Base(n.ObjectSelfLink))
 	if err != nil {
-		c.Errorf("Error attempting to build object name from self link %v: %v", n.ObjectSelfLink, err)
+		c.Errorf("Error attempting to build object name from self link %v: %v",
+			n.ObjectSelfLink, err)
 		return
 	}
 
-	//Create task assigned to "worker" task handler function
-	v := url.Values{}
-	v.Set("bucketName", n.BucketName)
-	v.Set("objectName", n.ObjectName)
-	v.Set("id", n.Id)
-	t := taskqueue.NewPOSTTask("/worker", v)
-	if _, err := taskqueue.Add(c, t, ""); err != nil {
-		c.Errorf("%v", err)
-		return
-	}
+	transformImageFunc.Call(c, *n)
 }
 
-// worker consumes data from the task queue and asks our backend machines to
-// compute some transformation on the given image via an HTTP request.
-func worker(w http.ResponseWriter, r *http.Request) {
-	//Get App Engine context
-	c := appengine.NewContext(r)
-	//Get bucket name from request
-	bucketName := r.FormValue("bucketName")
-	objectName := r.FormValue("objectName")
-	pathParts := []string{bucketName, objectName}
-	id := strings.Join(pathParts, "/")
+// transformImage takes a notification to manipulate an image and asks our backend service to
+// compute some transformation on it via HTTP. If the service is unavailable, it returns an error.
+func transformImage(c appengine.Context, n notification) (err error) {
+	id := strings.Join([]string{n.BucketName, n.ObjectName}, "/")
 
 	//Create an image processing request
 	client := urlfetch.Client(c)
-	values := make(url.Values)
-	values.Set("id", id)
-	values.Set("save-to", saveToBucketName)
+	values := url.Values{
+		"id":      {id},
+		"save-to": {saveToBucketName},
+	}
 
 	//Create Post URL by combining HTTP protocol and processing pool IP address
 	postUrlParts := []string{"http://", processingPoolIp, "/process"}
 	postUrl := strings.Join(postUrlParts, "")
 
-	c.Infof("Sending request to transform: %v", objectName)
+	c.Infof("Sending request to transform: %v", n.ObjectName)
 
 	//Send the image processing request to the image processing web service
 	resp, err := client.PostForm(postUrl, values)
 	if err != nil {
 		c.Errorf("Error sending POST to URL: %v", err)
-		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 	c.Infof("HTTP POST returned status: %v", resp.Status)
-	if respBody, err := ioutil.ReadAll(resp.Body); err == nil {
-		c.Infof("respBody=%v", string(respBody))
-	} else {
+	if respBody, err := ioutil.ReadAll(resp.Body); err != nil {
 		c.Errorf("Error attempting to read resp body: %v", err)
+	} else {
+		c.Infof("respBody=%v", string(respBody))
 	}
-	// Forward the backend service's status code along to the taskqueue.
-	w.WriteHeader(resp.StatusCode)
 	//TODO: Add Confirmation Queue to handle if assigned VM is deleted via Autoscaler scale down
+	return
 }

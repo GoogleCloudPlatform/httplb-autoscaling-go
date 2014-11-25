@@ -14,6 +14,7 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 2. Install the gcloud preview commands:
 
 		gcloud components update preview
+		gcloud components update app
 3. Create a project on Cloud Console <https://console.developers.google.com/project>
 4. Enable billing.
 5. Enable Cloud Deployment Manager API
@@ -21,9 +22,9 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 7. Enable Google Compute Engine Instance Group Manager API
 8. Enable Google Compute Engine Autoscaler API
 9. Create an Oauth Service Account for your project.
-10. Set the project's id in your shell:
+10. Set the project's ID:
 
-		export CLOUDSDK_CORE_PROJECT=${PROJECT_ID}
+		gcloud config set project ${PROJECT_ID}
 
 #### Create Input/Output Buckets
 
