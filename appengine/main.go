@@ -18,6 +18,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -118,11 +119,16 @@ func transformImage(c appengine.Context, n notification) (err error) {
 		return
 	}
 	c.Infof("HTTP POST returned status: %v", resp.Status)
-	if respBody, err := ioutil.ReadAll(resp.Body); err != nil {
-		c.Errorf("Error attempting to read resp body: %v", err)
-	} else {
-		c.Infof("respBody=%v", string(respBody))
+	if resp.StatusCode != http.StatusOK {
+		err = errors.New("Non-200 response from backend")
+		return
 	}
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		c.Errorf("Error attempting to read resp body: %v", err)
+		return
+	}
+	c.Infof("respBody=%v", string(respBody))
 	//TODO: Add Confirmation Queue to handle if assigned VM is deleted via Autoscaler scale down
 	return
 }
