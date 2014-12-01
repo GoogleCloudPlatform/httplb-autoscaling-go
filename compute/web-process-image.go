@@ -287,7 +287,7 @@ func NewImageProcessor(c <-chan processImageReq, name string) *imageProcessor {
 
 // healthHandler writes an HTTP 200 response indicating general system healthiness.
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }
 
 func main() {
