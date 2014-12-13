@@ -17,19 +17,19 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 		gcloud components update app
 3. Create a project on Cloud Console <https://console.developers.google.com/project>
 4. Enable billing.
-5. Enable Cloud Deployment Manager API
-6. Enable Google Compute Engine Instance Groups API
-7. Enable Google Compute Engine Instance Group Manager API
-8. Enable Google Compute Engine Autoscaler API
-9. Create an Oauth Service Account for your project.
-10. Set the project's ID:
+5. Enable Google Compute Engine Instance Groups API
+6. Enable Google Compute Engine Instance Group Manager API
+7. Enable Google Compute Engine Autoscaler API
+8. Create an Oauth Service Account for your project.
+9. Set the project's ID:
 
+		export PROJECT_ID=[your-project-id]
 		gcloud config set project ${PROJECT_ID}
 
 #### Create Input/Output Buckets
 
-	export INPUT_BUCKET = '${PROJECT_ID}-input-bucket'
-	export OUTPUT_BUCKET = '${PROJECT_ID}-output-bucket'
+	export INPUT_BUCKET="${PROJECT_ID}-input-bucket"
+	export OUTPUT_BUCKET="${PROJECT_ID}-output-bucket"
 	gsutil mb gs://${INPUT_BUCKET} gs://${OUTPUT_BUCKET}
 
 #### Google Compute Engine Pool
@@ -65,7 +65,7 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 
 ##### Set up the Autoscaler
 
-	gcloud preview autoscaler --zone us-central1-f create imagemagick-go-autoscaler --max-num-replicas 23 --min-num-replicas 5 --target-load-balancer-utilization 0.5 --target "https://www.googleapis.com/replicapool/v1beta2/projects/fifth-curve-684/zones/us-central1-f/instanceGroupManagers/imagemagick-go"
+	gcloud preview autoscaler --zone us-central1-f create imagemagick-go-autoscaler --max-num-replicas 23 --min-num-replicas 5 --target-load-balancer-utilization 0.5 --target "https://www.googleapis.com/replicapool/v1beta2/projects/${PROJECT_ID}/zones/us-central1-f/instanceGroupManagers/imagemagick-go"
 
 #### AppEngine
 
@@ -98,20 +98,31 @@ Be sure to verify the HTTPS version of your domain.
 
 1. Configure gsutil to use the Service Account:
 
-		gsutil config -e
+<https://cloud.google.com/storage/docs/object-change-notification#\_Using\_Account>
+
 2. Watch the bucket:
 
 		gsutil notification watchbucket https://${PROJECT_ID}.appspot.com/ gs://${INPUT_BUCKET}
 
 ### Running
 
-Generate some load!
+Generate some load! The following command will copy image files from a public GCS bucket to the project's input bucket, where they will be processed. 
 
-	gsutil -m cp -R gs://httplb-autoscaling-go-input gs://${INTPUT_BUCKET}
+	gsutil -m cp -R gs://httplb-autoscaling-go-input/* gs://${INTPUT_BUCKET}
 
 ### Observe
 
 Keep a close eye on your project's VM instances screen. You should see many more get spun up within a minute or so--Autoscaler's default cool down period between resizing attempts.
+
+### Cleanup
+
+Simply delete the project using the [console.developers.google.com](Google Developers Console).
+
+<https://developers.google.com/console/help/new/#creatingdeletingprojects>
+
+Remove the images from your GCS input and output buckets:
+
+	gsutil -m rm gs://${INPUT_BUCKET}/* gs://${OUTPUT_BUCKET}/*
 
 
 ### Troubleshooting
