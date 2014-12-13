@@ -116,13 +116,9 @@ Keep a close eye on your project's VM instances screen. You should see many more
 
 ### Cleanup
 
-Simply delete the project using the [console.developers.google.com](Google Developers Console).
+Simply delete the project using the [Google Developers Console](https://console.developers.google.com).
 
 <https://developers.google.com/console/help/new/#creatingdeletingprojects>
-
-Remove the images from your GCS input and output buckets:
-
-	gsutil -m rm gs://${INPUT_BUCKET}/* gs://${OUTPUT_BUCKET}/*
 
 
 ### Troubleshooting
