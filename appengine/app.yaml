@@ -17,9 +17,6 @@ runtime: go
 api_version: go1
 
 handlers:
-- url: /google2ee6a949c3bc20fd.html
-  static_files: google2ee6a949c3bc20fd.html
-  upload: google2ee6a949c3bc20fd.html
-
 - url: /.*
   script: _go_app
+# TODO: Add your verification file lines here.
