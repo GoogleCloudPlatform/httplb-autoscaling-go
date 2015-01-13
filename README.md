@@ -40,7 +40,7 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 		gcloud compute instance-templates create imagemagick-go-template --description "A pool of machines running our imagemagick service." --image debian-7 --machine-type n1-standard-1 --metadata goprog="http://storage.googleapis.com/imagemagick/compute/web-process-image.go" startup-script-url="gs://imagemagick/compute/scripts/startup-test-go.sh" --boot-disk-size 200GB --scopes storage-full --tags http-server
 2. Create the Managed Instance Group:
 
-		gcloud preview managed-instance-groups --zone us-central1-f create imagemagick-go --base-instance-name imagemagick-go --size 2 --template imagemagick-go-template
+		gcloud preview managed-instance-groups --zone us-central1-f create imagemagick-go --base-instance-name imagemagick-go --size 1 --template imagemagick-go-template
 
 ##### Create the HTTP Load Balancer
 1. Spin up a backend service:
