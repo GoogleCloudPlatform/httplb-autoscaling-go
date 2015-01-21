@@ -28,9 +28,10 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 
 #### Create Input/Output Buckets
 
+	export TMP_BUCKET="${PROJECT_ID}-tmp-bucket"
 	export INPUT_BUCKET="${PROJECT_ID}-input-bucket"
 	export OUTPUT_BUCKET="${PROJECT_ID}-output-bucket"
-	gsutil mb gs://${INPUT_BUCKET} gs://${OUTPUT_BUCKET}
+	gsutil mb gs://${TMP_BUCKET} gs://${INPUT_BUCKET} gs://${OUTPUT_BUCKET}
 
 #### Google Compute Engine Pool
 
@@ -106,9 +107,20 @@ Be sure to verify the HTTPS version of your domain.
 
 ### Running
 
+First we need to generate a set of images to process. Since it's simplest, we'll create a bunch of duplicates in a temporary bucket. When we want to run the demo, we'll use gsutil to copy those images in parallel from the temp bucket to the input one.
+
+To create a bunch of temporary images, ssh into any GCE instance currently running in your project (Hint: you can even use the Developers Console to do this in the browser). Next, run the following commands. Note that since `${TMP_BUCKET}` is only defined for your local shell, you'll have to copy/paste it over.
+
+	export TMP_BUCKET="" # GET_TMP_BUCKET_FROM_LOCAL_SHELL
+	export GOPATH=/usr/local
+	export PATH=$PATH:/usr/local/go/bin
+	go run /tmp/generate_files.go ${TMP_BUCKET} /tmp/image.jpg
+
+Go ahead and close your ssh connection to the GCE instance. The remaining commands can be run from your local shell.
+
 Generate some load! The following command will copy image files from a public GCS bucket to the project's input bucket, where they will be processed. 
 
-	gsutil -m cp -R gs://httplb-autoscaling-go-input/* gs://${INTPUT_BUCKET}
+	gsutil -m cp -R gs://${TMP_BUCKET}/* gs://${INTPUT_BUCKET}
 
 ### Observe
 

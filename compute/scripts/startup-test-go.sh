@@ -17,6 +17,7 @@
 apt-get -y update
 apt-get -y install imagemagick
 apt-get -y install mercurial
+apt-get -y install git
 
 curl -O https://storage.googleapis.com/golang/go1.2.2.linux-amd64.tar.gz
 tar -C /usr/local -xzf go1.2.2.linux-amd64.tar.gz
@@ -31,8 +32,18 @@ go get code.google.com/p/goauth2/compute/serviceaccount
 #Get go API client for Google Cloud Storage
 go get code.google.com/p/google-api-go-client/storage/v1
 
-# Restart the server in the background if it fails.
+# Get the go code to generate our initial image load.
+#go get github.com/GoogleCloudPlatform/httplb-autoscaling-go/scripts
+go get golang.org/x/oauth2
+go get golang.org/x/oauth2/google
+go get google.golang.org/api/storage/v1
+
+# Download our files to a temp dir.
 cd /tmp
+
+curl -O http://storage.googleapis.com/imagemagick/compute/scripts/generate_files.go
+
+# Restart the server in the background if it fails.
 function runServer {
   while :
   do
