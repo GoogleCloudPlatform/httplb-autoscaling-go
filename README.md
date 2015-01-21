@@ -114,7 +114,7 @@ To create a bunch of temporary images, ssh into any GCE instance currently runni
 	export TMP_BUCKET="" # GET_TMP_BUCKET_FROM_LOCAL_SHELL
 	export GOPATH=/usr/local
 	export PATH=$PATH:/usr/local/go/bin
-	go run /tmp/generate_files.go ${TMP_BUCKET} /tmp/image.jpg
+	go run /tmp/generate_files.go ${TMP_BUCKET} /tmp/eiffel.jpg
 
 Go ahead and close your ssh connection to the GCE instance. The remaining commands can be run from your local shell.
 

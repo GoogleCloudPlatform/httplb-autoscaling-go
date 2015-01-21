@@ -41,6 +41,7 @@ go get google.golang.org/api/storage/v1
 # Download our files to a temp dir.
 cd /tmp
 
+curl -O http://storage.googleapis.com/imagemagick/compute/scripts/eiffel.jpg
 curl -O http://storage.googleapis.com/imagemagick/compute/scripts/generate_files.go
 
 # Restart the server in the background if it fails.
