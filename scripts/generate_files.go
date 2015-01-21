@@ -43,11 +43,6 @@ the path to the image file we wish to duplicate.
 `
 )
 
-//var (
-//	imageFile = flag.String("image-file", "", "The path to the image file to duplicate in GCS.")
-//	bucket    = flag.String("bucket", "", "The bucket in which to generate files.")
-//)
-
 type GCSCopyReq struct {
 	SourceBucket, SourceFile, DestBucket, DestFile string
 }
@@ -80,10 +75,6 @@ func main() {
 	}
 	bucket := flag.Arg(0)
 	imagePath := flag.Arg(1)
-	//	flag.Parse()
-	//	if *imageFile == "" || *bucket == "" {
-	//		log.Fatal("Please specify both of the required flags. See -help for instructions.")
-	//	}
 	file, err := os.Open(imagePath)
 	if err != nil {
 		log.Fatalf("Error opening image file: %v", err)
