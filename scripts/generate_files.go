@@ -20,7 +20,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -36,13 +35,18 @@ import (
 const (
 	numCopiers = 10
 	numFiles   = 1000
+	usage      = `
+Usage:
+	go run generate_files.go BUCKET PATH/TO/IMAGE
+Where BUCKET is the GCS bucket in which to generate files and PATH/TO/IMAGE is 
+the path to the image file we wish to duplicate.
+`
 )
 
-var (
-	keyFile   = flag.String("key-file", "", "The path to the user's service account JSON key.")
-	imageFile = flag.String("image-file", "", "The path to the image file to duplicate in GCS.")
-	bucket    = flag.String("bucket", "", "The bucket in which to generate files.")
-)
+//var (
+//	imageFile = flag.String("image-file", "", "The path to the image file to duplicate in GCS.")
+//	bucket    = flag.String("bucket", "", "The bucket in which to generate files.")
+//)
 
 type GCSCopyReq struct {
 	SourceBucket, SourceFile, DestBucket, DestFile string
@@ -71,27 +75,28 @@ func copyObjects(s *storage.Service, in <-chan *GCSCopyReq, out chan<- string) {
 
 func main() {
 	flag.Parse()
-	file, err := os.Open(*imageFile)
+	if flag.NArg() != 2 {
+		log.Fatalf("Please specify both required arguments." + usage)
+	}
+	bucket := flag.Arg(0)
+	imagePath := flag.Arg(1)
+	//	flag.Parse()
+	//	if *imageFile == "" || *bucket == "" {
+	//		log.Fatal("Please specify both of the required flags. See -help for instructions.")
+	//	}
+	file, err := os.Open(imagePath)
 	if err != nil {
 		log.Fatalf("Error opening image file: %v", err)
 	}
-	fileName := path.Base(*imageFile)
+	fileName := path.Base(imagePath)
 	defer file.Close()
-	bytes, err := ioutil.ReadFile(*keyFile)
-	if err != nil {
-		log.Fatalf("Error reading key file: %v", err)
-	}
-	conf, err := google.JWTConfigFromJSON(bytes, storage.DevstorageFull_controlScope)
-	if err != nil {
-		log.Fatalf("Could not build JWT config: %v", err)
-	}
-	service, err := storage.New(conf.Client(oauth2.NoContext))
+	service, err := storage.New(oauth2.NewClient(oauth2.NoContext, google.ComputeTokenSource("")))
 	if err != nil {
 		log.Fatalf("Failed to create GCS client: %v", err)
 	}
 	// Insert the image into GCS.
 	baseFileName := buildName(0, fileName)
-	_, err = service.Objects.Insert(*bucket, &storage.Object{Name: baseFileName}).Media(file).Do()
+	_, err = service.Objects.Insert(bucket, &storage.Object{Name: baseFileName}).Media(file).Do()
 	if err != nil {
 		log.Fatalf("Unable to upload initial file to bucket: %v", err)
 	}
@@ -111,9 +116,9 @@ func main() {
 	}()
 	for i := 1; i < numFiles; i++ {
 		c <- &GCSCopyReq{
-			SourceBucket: *bucket,
+			SourceBucket: bucket,
 			SourceFile:   baseFileName,
-			DestBucket:   *bucket,
+			DestBucket:   bucket,
 			DestFile:     buildName(i, fileName),
 		}
 	}
