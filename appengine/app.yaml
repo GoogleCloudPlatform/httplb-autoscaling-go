@@ -17,6 +17,7 @@ runtime: go
 api_version: go1
 
 handlers:
+# TODO: Add your verification file lines here.
+
 - url: /.*
   script: _go_app
-# TODO: Add your verification file lines here.

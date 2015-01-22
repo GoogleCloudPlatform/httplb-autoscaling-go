@@ -34,7 +34,7 @@ import (
 
 const (
 	numCopiers = 10
-	numFiles   = 1000
+	numFiles   = 10000
 	usage      = `
 Usage:
 	go run generate_files.go BUCKET PATH/TO/IMAGE

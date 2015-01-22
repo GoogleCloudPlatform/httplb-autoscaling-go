@@ -116,7 +116,7 @@ To create a bunch of temporary images, ssh into any GCE instance currently runni
 	export PATH=$PATH:/usr/local/go/bin
 	go run /tmp/generate_files.go ${TMP_BUCKET} /tmp/eiffel.jpg
 
-Go ahead and close your ssh connection to the GCE instance. The remaining commands can be run from your local shell.
+Go ahead and close your ssh connection to the GCE instance. The remaining commands must be run from your local shell.
 
 Generate some load! The following command will copy image files from a public GCS bucket to the project's input bucket, where they will be processed. 
 
