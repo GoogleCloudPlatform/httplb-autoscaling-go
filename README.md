@@ -32,6 +32,7 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 	export INPUT_BUCKET="${PROJECT_ID}-input-bucket"
 	export OUTPUT_BUCKET="${PROJECT_ID}-output-bucket"
 	gsutil mb gs://${TMP_BUCKET} gs://${INPUT_BUCKET} gs://${OUTPUT_BUCKET}
+	gcloud compute project-info add-metadata --metadata tmp_bucket=${TMP_BUCKET}
 
 #### Google Compute Engine Pool
 
@@ -111,10 +112,9 @@ First we need to generate a set of images to process. Since it's simplest, we'll
 
 To create a bunch of temporary images, ssh into any GCE instance currently running in your project (Hint: you can even use the Developers Console to do this in the browser). Next, run the following commands. Note that since `${TMP_BUCKET}` is only defined for your local shell, you'll have to copy/paste it over.
 
-	export TMP_BUCKET="" # GET_TMP_BUCKET_FROM_LOCAL_SHELL
 	export GOPATH=/usr/local
 	export PATH=$PATH:/usr/local/go/bin
-	go run /tmp/generate_files.go ${TMP_BUCKET} /tmp/eiffel.jpg
+	go run /tmp/generate_files.go `/usr/share/google/get_metadata_value attributes/tmp_bucket` /tmp/eiffel.jpg
 
 Go ahead and close your ssh connection to the GCE instance. The remaining commands must be run from your local shell.
 
