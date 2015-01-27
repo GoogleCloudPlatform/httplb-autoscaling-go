@@ -101,7 +101,7 @@ Note: It can take several minutes for the instances to be marked as healthy in t
 	--max-num-replicas 23 \
 	--min-num-replicas 5 \
 	--target-load-balancer-utilization 0.5 \
-	--target "https://www.googleapis.com/replicapool/v1beta2/projects/${PROJECT_ID}/zones/us-central1-f/instanceGroupManagers/imagemagick-go"
+	--target imagemagick-go
 
 #### AppEngine
 
