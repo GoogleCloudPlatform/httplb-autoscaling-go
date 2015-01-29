@@ -26,7 +26,6 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 		export PROJECT_ID=[your-project-id]
 		export ZONE="us-central1-f"
 		gcloud config set project ${PROJECT_ID}
-		gcloud config set compute/zone ${ZONE}
 
 #### Create Input/Output Buckets
 
@@ -51,7 +50,8 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 		--tags http-lb
 2. Create the Managed Instance Group:
 
-		gcloud preview managed-instance-groups create imagemagick-go \
+		gcloud preview managed-instance-groups --zone ${ZONE} \
+		create imagemagick-go \
 		--base-instance-name imagemagick-go \
 		--size 1 \
 		--template imagemagick-go-template
@@ -70,6 +70,7 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 
 		  gcloud compute backend-services add-backend imagemagick-backend-service \
 		  --group imagemagick-go \
+		  --zone ${ZONE} \
 		  --balancing-mode UTILIZATION \
 		  --max-utilization 0.6
 2. Create a URL map to route requests to the appropriate backend services:
@@ -96,7 +97,8 @@ Note: It can take several minutes for the instances to be marked as healthy in t
 
 ##### Set up the Autoscaler
 
-	gcloud preview autoscaler create imagemagick-go-autoscaler \
+	gcloud preview autoscaler --zone ${ZONE} \
+	create imagemagick-go-autoscaler \
 	--max-num-replicas 23 \
 	--min-num-replicas 5 \
 	--target-load-balancer-utilization 0.5 \
