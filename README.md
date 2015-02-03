@@ -71,8 +71,7 @@ Images are stored in Google Cloud Storage buckets and are processed by a scaled 
 		  gcloud compute backend-services add-backend imagemagick-backend-service \
 		  --group imagemagick-go \
 		  --zone ${ZONE} \
-		  --balancing-mode UTILIZATION \
-		  --max-utilization 0.6
+		  --balancing-mode UTILIZATION
 2. Create a URL map to route requests to the appropriate backend services:
 
 		gcloud compute url-maps create imagemagick-map \
