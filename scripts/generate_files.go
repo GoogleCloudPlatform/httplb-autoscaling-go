@@ -54,7 +54,7 @@ func buildName(prefix int, name string) string {
 // copyObjects takes copy requests from the input channel and attempts to use
 // the GCS Storage API to perform the action. It incorporates naive retry logic
 // and will output failures to the outut channel.
-func copyObjects(s *storage.Service, in <-chan *GCSCopyReq, out chan<- string) {
+func copyObjects(s *storage.Service, in <-chan *GCSCopyReq, out chan<- string, fin chan<- interface{}) {
 	var err error
 	for o := range in {
 		for i := 0; i < 3; i++ {
@@ -64,6 +64,8 @@ func copyObjects(s *storage.Service, in <-chan *GCSCopyReq, out chan<- string) {
 		}
 		if err != nil {
 			out <- o.DestFile
+		} else {
+			fin <- struct{}{}
 		}
 	}
 }
@@ -93,17 +95,29 @@ func main() {
 	}
 	c := make(chan *GCSCopyReq, 999)
 	f := make(chan string)
+	finished := make(chan interface{})
 	wg := &sync.WaitGroup{}
 	wg.Add(numCopiers)
 	for i := 0; i < numCopiers; i++ {
 		go func() {
-			copyObjects(service, c, f)
+			copyObjects(service, c, f, finished)
 			wg.Done()
 		}()
 	}
 	go func() {
 		wg.Wait()
 		close(f)
+		close(finished)
+	}()
+	go func() {
+		i := 0
+		for _ = range finished {
+			i++
+			if i%100 == 0 {
+				fmt.Printf("%v/%v copied.\n", i, numFiles)
+			}
+		}
+		fmt.Printf("%v/%v copied.\n", i, numFiles)
 	}()
 	for i := 1; i < numFiles; i++ {
 		c <- &GCSCopyReq{
