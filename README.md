@@ -4,6 +4,7 @@ This project is no longer actively developed or maintained.
 
 For new work on this check out [our other batch processing tutorials.](https://cloud.google.com/compute/docs/tutorials#batch-processing-and-data-analysis)
 
+------------------------------
 
 Copyright (C) 2014 Google Inc.
 
