@@ -1,3 +1,11 @@
+![status: inactive](https://img.shields.io/badge/status-inactive-red.svg)
+
+This project is no longer actively developed or maintained.
+
+For new work on this check out [our other batch processing tutorials.](https://cloud.google.com/compute/docs/tutorials#batch-processing-and-data-analysis)
+
+------------------------------
+
 Copyright (C) 2014 Google Inc.
 
 # Example app: Batch processing with Google Compute Engine Autoscaler and HTTP Load Balancer
